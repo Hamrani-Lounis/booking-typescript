@@ -1,0 +1,16 @@
+{
+  "name": "meetbook-reservation-salles",
+  "version": "1.0.0",
+  "description": "SAE BUT 2 Informatique (RACD) — système de réservation de salles de réunion en TypeScript pur.",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "serve": "npx --yes http-server . -p 8080 -c-1",
+    "start": "npm run build && npm run serve",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\""
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0 || ^6.0.0"
+  }
+}

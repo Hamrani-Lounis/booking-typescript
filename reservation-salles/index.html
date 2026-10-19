@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MeetBook — réservation de salles de réunion d'entreprise.">
+  <meta name="color-scheme" content="light dark">
+  <title>MeetBook · Réservation de salles</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Le code TypeScript compilé est chargé comme module ES natif. -->
+  <script type="module" src="dist/main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#planning-title">Aller au planning</a>
+
+  <header class="app-header">
+    <div class="app-header__inner">
+      <div class="brand">
+        <span class="brand__logo" aria-hidden="true">MB</span>
+        <div>
+          <p class="brand__name">MeetBook</p>
+          <p class="brand__tagline">Réservation de salles de réunion</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <label class="field field--inline" for="current-user">
+          <span class="field__label">Connecté en tant que</span>
+          <select id="current-user" class="input"></select>
+        </label>
+        <button type="button" id="reset-data" class="btn btn--ghost" title="Restaurer le jeu de données initial">
+          Réinitialiser
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Panneau de filtres -->
+    <aside class="sidebar" aria-labelledby="filters-title">
+      <section class="panel">
+        <h2 id="filters-title" class="panel__title">Filtres</h2>
+
+        <div class="field">
+          <label class="field__label" for="date-picker">Date</label>
+          <div class="date-nav">
+            <button type="button" id="prev-day" class="btn btn--icon" aria-label="Jour précédent">&#8249;</button>
+            <input type="date" id="date-picker" class="input" required>
+            <button type="button" id="next-day" class="btn btn--icon" aria-label="Jour suivant">&#8250;</button>
+          </div>
+          <button type="button" id="today-btn" class="btn btn--link">Revenir à aujourd'hui</button>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="capacity-filter">
+            Capacité minimale : <output id="capacity-output" for="capacity-filter">1</output> pers.
+          </label>
+          <input type="range" id="capacity-filter" class="range" min="1" max="20" step="1" value="1">
+        </div>
+
+        <fieldset class="field fieldset">
+          <legend class="field__label">Équipements requis</legend>
+          <div id="equipment-filters" class="checkbox-list"></div>
+        </fieldset>
+
+        <button type="button" id="clear-filters" class="btn btn--secondary btn--block">Effacer les filtres</button>
+      </section>
+
+      <section class="panel" aria-labelledby="my-bookings-title">
+        <h2 id="my-bookings-title" class="panel__title">Mes prochaines réservations</h2>
+        <ul id="my-bookings" class="booking-list"></ul>
+      </section>
+    </aside>
+
+    <!-- Planning principal -->
+    <main class="main" id="main">
+      <section class="panel panel--planning" aria-labelledby="planning-title">
+        <div class="planning-header">
+          <div>
+            <h1 id="planning-title" class="planning-title" tabindex="-1">Planning du jour</h1>
+            <p id="planning-subtitle" class="planning-subtitle"></p>
+          </div>
+          <button type="button" id="new-booking" class="btn btn--primary">+ Nouvelle réservation</button>
+        </div>
+
+        <ul class="legend" aria-label="Légende">
+          <li><span class="legend__swatch legend__swatch--free" aria-hidden="true"></span>Disponible</li>
+          <li><span class="legend__swatch legend__swatch--busy" aria-hidden="true"></span>Occupé</li>
+          <li><span class="legend__swatch legend__swatch--mine" aria-hidden="true"></span>Ma réservation</li>
+          <li><span class="legend__swatch legend__swatch--past" aria-hidden="true"></span>Passé</li>
+        </ul>
+
+        <div class="planning-scroll" tabindex="0" aria-label="Planning des salles, défilable horizontalement">
+          <div id="planning" class="planning" aria-describedby="planning-subtitle"></div>
+        </div>
+        <p id="planning-empty" class="empty-state" hidden>
+          Aucune salle ne correspond à vos filtres. Essayez de réduire la capacité ou les équipements requis.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Formulaire de réservation (élément dialog natif : focus et touche Échap gérés par le navigateur) -->
+  <dialog id="booking-dialog" class="dialog" aria-labelledby="dialog-title">
+    <form id="booking-form" class="dialog__form" novalidate>
+      <header class="dialog__header">
+        <h2 id="dialog-title">Nouvelle réservation</h2>
+        <button type="button" class="btn btn--icon" data-close-dialog aria-label="Fermer">&#10005;</button>
+      </header>
+
+      <div id="form-errors" class="alert alert--error" role="alert" hidden></div>
+
+      <div class="form-grid">
+        <div class="field field--full">
+          <label class="field__label" for="booking-title">Objet de la réunion</label>
+          <input type="text" id="booking-title" name="title" class="input" minlength="3" maxlength="80"
+                 placeholder="Ex. : Revue de sprint" required autocomplete="off">
+        </div>
+
+        <div class="field field--full">
+          <label class="field__label" for="booking-room">Salle</label>
+          <select id="booking-room" name="roomId" class="input" required></select>
+          <p id="room-details" class="field__hint"></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="booking-date">Date</label>
+          <input type="date" id="booking-date" name="date" class="input" required>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="booking-attendees">Participants</label>
+          <input type="number" id="booking-attendees" name="attendees" class="input" min="1" max="50" value="2" required>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="booking-start">Début</label>
+          <select id="booking-start" name="start" class="input" required></select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="booking-end">Fin</label>
+          <select id="booking-end" name="end" class="input" required></select>
+        </div>
+      </div>
+
+      <footer class="dialog__footer">
+        <button type="button" class="btn btn--secondary" data-close-dialog>Annuler</button>
+        <button type="submit" class="btn btn--primary">Confirmer la réservation</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Zone de notifications annoncée par les lecteurs d'écran -->
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+  <noscript>
+    <p class="noscript">Cette application nécessite JavaScript pour fonctionner.</p>
+  </noscript>
+</body>
+</html>
